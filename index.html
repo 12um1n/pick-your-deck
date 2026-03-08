@@ -1,0 +1,1229 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <title>PICK YOUR DECK</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    h1, .btn, .turn-indicator, .modal h2,
+    .result-final-text, .result-player-label, .badge-pairs, .badge-name {
+      font-family: 'Fredoka', 'Hiragino Maru Gothic Pro', sans-serif;
+    }
+
+    :root {
+      --bg:       #EEFDCD;   /* Mimosa */
+      --aqua:     #7DFDDF;   /* Aquamarine */
+      --mauve:    #D696FE;   /* Mauve */
+      --rose:     #F85BB1;   /* Brilliant Rose */
+      --outline:  #2A2840;
+      --text:     #2A2840;
+      --text-sub: #7070A0;
+      --white:    #FFFFFF;
+      --p1:       #D696FE;   /* player 1 = mauve */
+      --p2:       #7DFDDF;   /* player 2 = aquamarine */
+      --p1-dark:  #8030B8;
+      --p2-dark:  #18A080;
+    }
+
+    body {
+      font-family: 'Hiragino Maru Gothic Pro', 'Rounded Mplus 1c', 'Arial Rounded MT Bold', 'Segoe UI', sans-serif;
+      background-color: var(--bg);
+      min-height: 100vh;
+      min-height: -webkit-fill-available;
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding-bottom: max(32px, env(safe-area-inset-bottom, 0px) + 16px);
+      padding-left:  env(safe-area-inset-left,  0px);
+      padding-right: env(safe-area-inset-right, 0px);
+      overflow-x: hidden;
+    }
+
+    /* ── Header ── */
+    header {
+      position: relative; z-index: 1;
+      width: 100%; max-width: 700px;
+      padding: clamp(8px, 3vw, 18px) 16px 6px;
+      text-align: center;
+    }
+    .title-wrap {
+      display: flex; align-items: center; justify-content: center;
+      gap: 8px; margin-bottom: clamp(6px, 2vw, 12px);
+    }
+    h1 {
+      font-size: clamp(1.3rem, 5.5vw, 2.4rem);
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      color: var(--mauve);
+    }
+
+    /* ── Buttons ── */
+    .controls {
+      display: flex; gap: 10px; justify-content: center;
+      flex-wrap: wrap; margin-bottom: 8px;
+    }
+    .btn {
+      padding: 10px 24px; min-height: 44px;
+      border: none;
+      border-radius: 999px; cursor: pointer;
+      font-size: 0.9rem; font-weight: 900;
+      letter-spacing: 0.05em;
+      transition: transform 0.12s, filter 0.12s;
+      position: relative; overflow: hidden;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+      color: var(--text);
+    }
+    .btn:hover  { transform: translateY(-2px); filter: brightness(1.06); }
+    .btn:active { transform: translateY(1px);  filter: brightness(0.94); }
+
+    .btn-start    { background: var(--rose); color: #fff; }
+    .btn-settings { background: var(--mauve); color: #fff; }
+    .btn-clear    { background: var(--rose); color: #fff; }
+    .btn-done     { background: var(--aqua); }
+
+    /* ── Turn Indicator ── */
+    .turn-indicator {
+      display: flex; align-items: center; justify-content: center;
+      gap: 8px;
+      padding: 8px 24px; margin: 4px auto 6px;
+      border-radius: 999px;
+      border: none;
+      font-size: clamp(0.95rem, 3.5vw, 1.2rem);
+      font-weight: 900; letter-spacing: 0.04em;
+      color: var(--text);
+      max-width: 340px; width: 90%;
+      transition: background 0.35s;
+    }
+    .turn-indicator.p1-turn { background: var(--mauve); }
+    .turn-indicator.p2-turn { background: var(--aqua); }
+    .turn-suffix { font-weight: 700; }
+    .turn-indicator.switching {
+      animation: turnSwitch 0.32s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    @keyframes turnSwitch {
+      0%   { transform: scale(0.85); opacity: 0.6; }
+      100% { transform: scale(1);    opacity: 1;   }
+    }
+
+    /* ── Score Badges ── equal width via grid ── */
+    .scores {
+      display: grid;
+      grid-template-columns: 1fr 1fr;   /* always equal width */
+      gap: 8px;
+      width: 90%; max-width: 280px;
+      margin: 0 auto 2px;
+    }
+    .score-badge {
+      background: rgba(255,255,255,0.55);
+      border-radius: 16px;
+      padding: 7px 10px;
+      display: flex; align-items: center; justify-content: center;
+      gap: 5px;
+      font-size: 0.85rem;
+      transition: transform 0.2s, background 0.2s;
+    }
+    .score-badge.active-badge { transform: translateY(-2px); }
+    .p1-badge.active-badge { background: color-mix(in srgb, var(--mauve) 28%, white); }
+    .p2-badge.active-badge { background: color-mix(in srgb, var(--aqua)  35%, white); }
+    .badge-name  { font-weight: 900; font-size: 0.78rem; }
+    .p1-badge .badge-name { color: var(--p1-dark); font-size: 0.82rem; }
+    .p2-badge .badge-name { color: var(--p2-dark); font-size: 0.82rem; }
+    .badge-pairs { font-size: 1.3rem; font-weight: 900; color: var(--text); line-height: 1; }
+    .badge-unit  { font-size: 0.7rem; color: var(--text-sub); }
+    .badge-crown { font-size: 0.9rem; animation: crownBounce 0.8s ease-in-out infinite alternate; }
+    .badge-stop  { font-size: 0.65rem; font-weight: 900; letter-spacing: 0.08em;
+                   color: var(--rose); line-height: 1; }
+    .score-badge.stopped { opacity: 0.55; }
+    .score-badge.stopped .badge-pairs { color: var(--text-sub); }
+    @keyframes crownBounce {
+      from { transform: translateY(0) rotate(-10deg); }
+      to   { transform: translateY(-4px) rotate(10deg); }
+    }
+
+    /* ── Game Area ── */
+    .game-area {
+      position: relative; z-index: 1;
+      width: 100%; max-width: 700px;
+      padding: 8px 12px 0;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: clamp(4px, 1.5vw, 10px);
+    }
+
+    /* ── Card ── */
+    .card {
+      aspect-ratio: 2 / 3;
+      perspective: 900px;
+      cursor: pointer; user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
+    .card-inner {
+      width: 100%; height: 100%;
+      position: relative; transform-style: preserve-3d;
+      transition: transform 0.42s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .card.flipped .card-inner,
+    .card.matched .card-inner { transform: rotateY(180deg); }
+    .card-face {
+      position: absolute; inset: 0;
+      border-radius: 12px;
+      backface-visibility: hidden; -webkit-backface-visibility: hidden;
+      overflow: hidden;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.13), 0 1px 4px rgba(0,0,0,0.08);
+    }
+
+    /* Card Back — image */
+    .card-back {
+      background-image: url('card-back.jpeg');
+      background-size: cover;
+      background-position: center;
+    }
+    .card-back-inner { display: none; }
+    .card-back-icon  { display: none; }
+
+    /* Card Front — flat */
+    .card-front {
+      transform: rotateY(180deg);
+      background: var(--white);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .card-front.has-image { padding: 0; }
+    .card-front.has-image img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+    /* Default playing cards — new palette */
+    .playing-card {
+      width: 100%; height: 100%;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      position: relative; border-radius: 9px;
+    }
+    .suit-heart   { background: color-mix(in srgb, var(--mauve) 28%, white); color: var(--p1-dark); }
+    .suit-diamond { background: color-mix(in srgb, var(--rose)  28%, white); color: #B0205A; }
+    .suit-spade   { background: color-mix(in srgb, var(--aqua)  30%, white); color: var(--p2-dark); }
+    .suit-club    { background: color-mix(in srgb, var(--aqua)  20%, white); color: #108070; }
+    .pc-center-suit { font-size: clamp(1.4rem, 5vw, 2.7rem); line-height: 1; }
+    .pc-corner {
+      position: absolute; font-size: clamp(0.40rem, 1.45vw, 0.68rem);
+      font-weight: 900; line-height: 1.15;
+      display: flex; flex-direction: column; align-items: center;
+    }
+    .pc-tl { top: 3px; left: 4px; }
+    .pc-br { bottom: 3px; right: 4px; transform: rotate(180deg); }
+
+    /* ── Match animation ── */
+    @keyframes matchBounce {
+      0%   { transform: scale(1)    translateY(0); }
+      28%  { transform: scale(1.18) translateY(-10px); }
+      52%  { transform: scale(0.93) translateY(3px); }
+      74%  { transform: scale(1.08) translateY(-4px); }
+      100% { transform: scale(1)    translateY(0); }
+    }
+    .card.match-bounce { animation: matchBounce 0.42s cubic-bezier(0.36,0.07,0.19,0.97); }
+
+    @keyframes matchBurst {
+      0%   { transform: rotateY(180deg) scale(1);    filter: brightness(1); }
+      25%  { transform: rotateY(180deg) scale(1.22); filter: brightness(1.8) drop-shadow(0 0 14px rgba(248,91,177,0.8)); }
+      60%  { transform: rotateY(180deg) scale(0.78); }
+      100% { transform: rotateY(180deg) scale(0) rotate(22deg); opacity: 0; }
+    }
+    .card.removing .card-inner { animation: matchBurst 0.50s ease-in forwards; }
+    .card.gone { visibility: hidden; pointer-events: none; }
+
+    .card.flash-ring::after {
+      content: ''; position: absolute; inset: -12px; border-radius: 20px;
+      background: radial-gradient(circle,
+        rgba(248,91,177,0.85) 0%, rgba(214,150,254,0.55) 45%, transparent 72%);
+      animation: flashRing 0.40s ease-out forwards;
+      z-index: 20; pointer-events: none;
+    }
+    @keyframes flashRing {
+      from { opacity: 1; transform: scale(0.3); }
+      to   { opacity: 0; transform: scale(2.8); }
+    }
+
+    @keyframes shake {
+      0%,100% { transform: translateX(0)    rotate(0deg);  }
+      20%      { transform: translateX(-6px) rotate(-2deg); }
+      40%      { transform: translateX( 6px) rotate( 2deg); }
+      60%      { transform: translateX(-4px) rotate(-1deg); }
+      80%      { transform: translateX( 4px) rotate( 1deg); }
+    }
+    .card.shake { animation: shake 0.38s ease-in-out; }
+
+    /* ── GET / Reveal Popup ── */
+    #get-popup {
+      position: fixed; inset: 0; z-index: 250;
+      display: none; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: clamp(10px, 2.5vh, 20px);
+      pointer-events: none;
+    }
+    .get-inner {
+      display: flex; flex-direction: column;
+      align-items: center; gap: clamp(10px, 2.5vh, 20px);
+    }
+    @keyframes getIn {
+      from { transform: scale(0.3) translateY(24px); opacity: 0; }
+      to   { transform: scale(1)   translateY(0);    opacity: 1; }
+    }
+    @keyframes getOut {
+      from { transform: scale(1)    translateY(0);     opacity: 1; }
+      to   { transform: scale(0.82) translateY(-28px); opacity: 0; }
+    }
+    .get-card {
+      /* 縦基準: 画面の72%を高さ上限、aspect-ratio 2:3 で幅が自動決定 */
+      height: min(72vh, 420px);
+      width: auto;
+      aspect-ratio: 2/3;
+      border-radius: 16px; overflow: hidden;
+      box-shadow: 0 16px 48px rgba(0,0,0,0.28), 0 4px 14px rgba(0,0,0,0.14);
+    }
+    .get-card img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .get-card .playing-card { border-radius: 14px; width: 100%; height: 100%; }
+    .get-card .pc-center-suit { font-size: clamp(2.5rem, 10vw, 5rem); }
+    .get-label {
+      font-family: 'Fredoka', sans-serif;
+      font-size: clamp(2.8rem, 11vw, 5rem);
+      font-weight: 700; letter-spacing: 0.12em; line-height: 1;
+      color: var(--rose);
+      text-shadow: 0 0 30px rgba(248,91,177,0.5), 0 4px 16px rgba(248,91,177,0.3);
+    }
+
+    /* ── Deck Confirmed Toast ── */
+    .deck-toast {
+      position: fixed; top: 50%; left: 50%;
+      transform: translate(-50%, -50%) scale(0.5);
+      color: var(--text);
+      font-size: clamp(1.1rem, 4.5vw, 1.5rem); font-weight: 900;
+      padding: 18px 36px; border-radius: 22px;
+      box-shadow: 0 6px 28px rgba(0,0,0,0.14);
+      z-index: 400; opacity: 0; pointer-events: none;
+      transition: transform 0.32s cubic-bezier(0.34,1.56,0.64,1), opacity 0.28s;
+      text-align: center; line-height: 1.5; white-space: nowrap;
+    }
+    .deck-toast.show { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+
+    /* ── Particles ── */
+    #particles-root { position: fixed; inset: 0; pointer-events: none; z-index: 60; }
+    .particle {
+      position: absolute; line-height: 1; text-align: center; pointer-events: none;
+      -webkit-text-stroke: 1px var(--outline); paint-order: stroke fill;
+      animation: particleFly 0.80s ease-out forwards;
+    }
+    @keyframes particleFly {
+      from { transform: scale(1)  translate(0,0)                   rotate(0deg);   opacity: 1; }
+      to   { transform: scale(0)  translate(var(--tx), var(--ty))  rotate(360deg); opacity: 0; }
+    }
+
+    /* ── Confetti ── */
+    #confetti-canvas {
+      position: fixed; inset: 0; width: 100%; height: 100%;
+      pointer-events: none; z-index: 50;
+    }
+
+    /* ── Overlay ── */
+    .overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(238,253,205,0.72); z-index: 120;
+      align-items: center; justify-content: center;
+      padding: 16px;
+      padding-bottom: max(16px, env(safe-area-inset-bottom, 0px) + 16px);
+      backdrop-filter: blur(10px);
+      overflow-y: auto; -webkit-overflow-scrolling: touch;
+    }
+    .overlay.open { display: flex; }
+
+    /* ── Settings Modal ── */
+    .modal {
+      background: rgba(255,255,255,0.97);
+      border-radius: 22px; padding: 22px 16px 20px;
+      width: 100%; max-width: 480px;
+      max-height: 88vh; max-height: 88dvh;
+      overflow-y: auto; -webkit-overflow-scrolling: touch;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.10);
+    }
+    .modal h2 {
+      text-align: center; font-size: 1.2rem; font-weight: 900;
+      color: var(--mauve);
+      margin-bottom: 4px;
+    }
+    .modal-hint { text-align: center; font-size: 0.82rem; color: var(--text-sub); margin-bottom: 16px; }
+    .upload-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 18px; }
+    .upload-slot {
+      aspect-ratio: 2 / 3;
+      border: 2.5px dashed rgba(42,40,64,0.35); border-radius: 10px;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      cursor: pointer; overflow: hidden; position: relative;
+      transition: border-color 0.2s, background 0.15s, transform 0.15s, box-shadow 0.15s;
+      background: rgba(255,255,255,0.6);
+      touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+    }
+    .upload-slot:hover {
+      border-color: var(--outline); border-style: solid;
+      background: rgba(255,255,255,0.85);
+      transform: translate(-2px,-2px); box-shadow: 3px 3px 0 var(--outline);
+    }
+    .upload-slot img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .upload-slot .slot-plus {
+      font-size: 1.5rem; line-height: 1;
+      color: var(--text-sub);
+    }
+    .upload-slot .slot-num { font-size: 0.62rem; color: var(--text-sub); margin-top: 3px; font-weight: 700; }
+    .upload-slot input[type="file"] { display: none; }
+    .upload-slot.slot-error { border-color: #F85BB1; border-style: solid; background: rgba(248,91,177,0.08); }
+    .upload-slot.slot-warn  { border-color: #F0A030; border-style: solid; background: rgba(240,160,48,0.08); }
+    .slot-msg {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      font-size: 0.52rem; font-weight: 700; text-align: center;
+      padding: 2px 2px 3px; line-height: 1.2;
+      white-space: pre-line;
+    }
+    .slot-error .slot-msg { background: rgba(248,91,177,0.85); color: #fff; }
+    .slot-warn  .slot-msg { background: rgba(240,160,48,0.85);  color: #fff; }
+    .modal-actions { display: flex; gap: 10px; justify-content: center; }
+
+    /* ── Result Screen ── */
+    .result-box {
+      background: rgba(255,255,255,0.97);
+      border-radius: 28px;
+      padding: clamp(24px,5vw,40px) clamp(16px,4vw,32px);
+      width: min(92vw, 500px);
+      box-shadow: 0 8px 40px rgba(0,0,0,0.12);
+      text-align: center;
+      animation: popIn 0.40s cubic-bezier(0.34,1.56,0.64,1) forwards;
+    }
+    @keyframes popIn {
+      from { transform: scale(0.88); opacity: 0; }
+      to   { transform: scale(1);    opacity: 1; }
+    }
+    .result-decks {
+      display: flex; gap: clamp(8px,3vw,20px);
+      justify-content: center; margin-bottom: 20px;
+    }
+    .result-player-section { flex: 1; min-width: 0; }
+    .result-player-label {
+      font-size: 0.78rem; font-weight: 900; letter-spacing: 0.07em;
+      margin-bottom: 8px;
+    }
+    .result-player-label.p1-label { color: var(--p1-dark); }
+    .result-player-label.p2-label { color: var(--p2-dark); }
+    .result-mini-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px;
+    }
+    .result-mini-card {
+      aspect-ratio: 2/3; border-radius: 6px; overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.13);
+      animation: popIn 0.30s cubic-bezier(0.34,1.56,0.64,1) forwards;
+    }
+    .result-mini-card img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .result-mini-card .playing-card { width: 100%; height: 100%; }
+    .result-final {
+      text-align: center; opacity: 0;
+      transition: opacity 0.6s ease;
+    }
+    .result-final.visible { opacity: 1; }
+    .result-final-text {
+      font-size: clamp(1.1rem, 4.5vw, 1.5rem);
+      font-weight: 700; letter-spacing: 0.06em;
+      color: var(--text); margin-bottom: 20px;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 480px) {
+      h1 { font-size: clamp(1.2rem, 5.5vw, 1.7rem); }
+      .turn-indicator { font-size: clamp(0.88rem, 3.5vw, 1.05rem); padding: 7px 16px; }
+    }
+    @media (max-width: 390px) {
+      header { padding: 6px 10px 4px; }
+      .title-wrap { margin-bottom: 4px; }
+      .controls { margin-bottom: 5px; gap: 8px; }
+      .btn { padding: 8px 18px; min-height: 40px; font-size: 0.85rem; }
+      .turn-indicator { padding: 7px 14px; margin: 3px auto 5px; font-size: 0.9rem; }
+      .scores { max-width: 250px; gap: 6px; }
+      .score-badge { padding: 5px 8px; }
+      .badge-pairs { font-size: 1.1rem; }
+      .game-area { padding: 4px 6px 0; }
+      .grid { gap: 4px; }
+    }
+    @media (max-width: 320px) {
+      .grid { gap: 3px; }
+      .turn-indicator { font-size: 0.8rem; padding: 6px 12px; }
+      .scores { max-width: 220px; }
+      h1 { font-size: 1.1rem; }
+    }
+    @media (max-height: 500px) and (orientation: landscape) {
+      header { padding-top: 4px; padding-bottom: 2px; }
+      .title-wrap { margin-bottom: 2px; }
+      h1 { font-size: 1rem; }
+      .controls { margin-bottom: 4px; }
+      .turn-indicator { padding: 5px 14px; font-size: 0.82rem; margin: 2px auto 4px; }
+      .scores { margin-bottom: 0; }
+      .game-area { padding-top: 3px; }
+      .grid { gap: 3px; }
+      .get-card { height: min(80vh, 320px); }
+    }
+  </style>
+</head>
+<body>
+
+<canvas id="confetti-canvas"></canvas>
+<div id="particles-root"></div>
+<div class="deck-toast" id="deckToast"></div>
+<div id="get-popup">
+  <div class="get-inner">
+    <div class="get-card" id="getCard1"></div>
+    <div class="get-label" id="getLabel">GET!</div>
+  </div>
+</div>
+
+<!-- Header -->
+<header>
+  <div class="title-wrap">
+    <h1>PICK YOUR DECK</h1>
+  </div>
+  <div class="controls">
+    <button class="btn btn-start"    id="startBtn">スタート</button>
+    <button class="btn btn-settings" id="settingsBtn">⚙ 設定</button>
+  </div>
+
+  <!-- Turn indicator -->
+  <div class="turn-indicator p1-turn" id="turnIndicator">
+    <span id="turnPlayerName">Player 1</span>
+    <span class="turn-suffix">のターン</span>
+  </div>
+
+  <!-- Score badges — equal width via CSS grid -->
+  <div class="scores">
+    <div class="score-badge p1-badge active-badge" id="badgeP1">
+      <span class="badge-name">P1</span>
+      <span class="badge-pairs" id="pairsP1">0</span>
+      <span class="badge-unit">ペア</span>
+    </div>
+    <div class="score-badge p2-badge" id="badgeP2">
+      <span class="badge-name">P2</span>
+      <span class="badge-pairs" id="pairsP2">0</span>
+      <span class="badge-unit">ペア</span>
+    </div>
+  </div>
+</header>
+
+<!-- Game board -->
+<main class="game-area">
+  <div class="grid" id="grid"></div>
+</main>
+
+<!-- Settings modal -->
+<div class="overlay" id="settingsOverlay">
+  <div class="modal">
+    <h2>⚙ 画像設定</h2>
+    <p class="modal-hint">好きな画像をアップロードしてください（タップで選択）</p>
+    <div class="upload-grid" id="uploadGrid"></div>
+    <div class="modal-actions">
+      <button class="btn btn-clear" id="clearImagesBtn">✕ クリア</button>
+      <button class="btn btn-done"  id="closeSettingsBtn">✓ 完了</button>
+    </div>
+  </div>
+</div>
+
+<!-- Result screen -->
+<div class="overlay" id="resultOverlay">
+  <div class="result-box">
+    <div class="result-decks">
+      <div class="result-player-section">
+        <div class="result-player-label p1-label">Player 1</div>
+        <div class="result-mini-grid" id="cardsP1"></div>
+      </div>
+      <div class="result-player-section">
+        <div class="result-player-label p2-label">Player 2</div>
+        <div class="result-mini-grid" id="cardsP2"></div>
+      </div>
+    </div>
+    <div class="result-final" id="resultFinal">
+      <div class="result-final-text">Your final picks.</div>
+      <button class="btn btn-start" id="playAgainBtn">もう一度</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =====================================================================
+   Constants
+===================================================================== */
+const STORAGE_KEY   = 'memGame_img_';
+const NUM_PAIRS     = 10;
+const WIN_PAIRS     = 5;
+
+const PLAYER_NAMES  = ['Player 1', 'Player 2'];
+const PLAYER_GRAD   = ['#D696FE', '#7DFDDF'];
+
+const DEFAULT_CARDS = [
+  { rank: 'A',  suit: '\u2665', cls: 'suit-heart'   },
+  { rank: 'K',  suit: '\u2665', cls: 'suit-heart'   },
+  { rank: 'Q',  suit: '\u2666', cls: 'suit-diamond' },
+  { rank: 'J',  suit: '\u2666', cls: 'suit-diamond' },
+  { rank: '10', suit: '\u2660', cls: 'suit-spade'   },
+  { rank: '9',  suit: '\u2660', cls: 'suit-spade'   },
+  { rank: '8',  suit: '\u2663', cls: 'suit-club'    },
+  { rank: '7',  suit: '\u2663', cls: 'suit-club'    },
+  { rank: '6',  suit: '\u2665', cls: 'suit-heart'   },
+  { rank: '5',  suit: '\u2666', cls: 'suit-diamond' },
+];
+
+const STAR_COLORS   = ['#D696FE','#7DFDDF','#F85BB1','#C8F8EE','#F0D8FF','#EEFDCD','#FFD6EC'];
+const PARTICLE_CHARS = ['★','☆','✦','♡','◇','✿'];
+
+/* =====================================================================
+   State
+===================================================================== */
+let userImages    = new Array(NUM_PAIRS).fill(null);
+let gameCards     = [];
+let flipped       = [];
+let matchedCount  = 0;
+let canFlip       = true;
+
+let currentPlayer = 0;
+let playerPairs   = [0, 0];
+let playerDecks   = [[], []];
+let deckConfirmed = [false, false];
+
+/* =====================================================================
+   localStorage
+===================================================================== */
+function loadImages() {
+  for (let i = 0; i < NUM_PAIRS; i++) {
+    userImages[i] = localStorage.getItem(STORAGE_KEY + i) || null;
+  }
+}
+function saveImage(i, dataUrl) {
+  userImages[i] = dataUrl;          /* in-memory は必ず先に更新 */
+  try {
+    localStorage.setItem(STORAGE_KEY + i, dataUrl);
+    return true;
+  } catch (e) {
+    return false;                   /* 容量超過 — 今セッション中は使えるが保存不可 */
+  }
+}
+function clearAllImages() {
+  for (let i = 0; i < NUM_PAIRS; i++) {
+    localStorage.removeItem(STORAGE_KEY + i);
+    userImages[i] = null;
+  }
+}
+
+/* =====================================================================
+   Game start
+===================================================================== */
+function startGame() {
+  flipped       = [];
+  matchedCount  = 0;
+  canFlip       = true;
+  currentPlayer = 0;
+  playerPairs   = [0, 0];
+  playerDecks   = [[], []];
+  deckConfirmed = [false, false];
+
+  document.getElementById('resultOverlay').classList.remove('open');
+  document.getElementById('resultFinal').classList.remove('visible');
+  document.getElementById('cardsP1').innerHTML = '';
+  document.getElementById('cardsP2').innerHTML = '';
+
+  ['badgeP1','badgeP2'].forEach(id => {
+    const badge = document.getElementById(id);
+    badge.classList.remove('stopped');
+    badge.querySelectorAll('.badge-crown, .badge-stop').forEach(el => el.remove());
+  });
+
+  updateTurnDisplay();
+  updateScoreBadges();
+
+  const pairs = [];
+  for (let i = 0; i < NUM_PAIRS; i++) pairs.push({ pairId: i }, { pairId: i });
+  gameCards = shuffle(pairs).map(c => ({ ...c, flipped: false, matched: false }));
+  renderGrid();
+}
+
+/* =====================================================================
+   Turn management
+===================================================================== */
+function updateTurnDisplay() {
+  const p   = currentPlayer;
+  const ind = document.getElementById('turnIndicator');
+  document.getElementById('turnPlayerName').textContent = PLAYER_NAMES[p];
+  ind.classList.remove('p1-turn', 'p2-turn');
+  ind.classList.add(p === 0 ? 'p1-turn' : 'p2-turn');
+}
+
+function updateScoreBadges() {
+  document.getElementById('pairsP1').textContent = playerPairs[0];
+  document.getElementById('pairsP2').textContent = playerPairs[1];
+  document.getElementById('badgeP1').classList.toggle('active-badge', currentPlayer === 0);
+  document.getElementById('badgeP2').classList.toggle('active-badge', currentPlayer === 1);
+}
+
+function switchTurn() {
+  currentPlayer = 1 - currentPlayer;
+  /* 次のプレイヤーが既にSTOPなら元に戻す */
+  if (deckConfirmed[currentPlayer]) currentPlayer = 1 - currentPlayer;
+  const ind = document.getElementById('turnIndicator');
+  ind.classList.remove('switching');
+  void ind.offsetWidth;
+  ind.classList.add('switching');
+  updateTurnDisplay();
+  updateScoreBadges();
+}
+
+/* =====================================================================
+   Card click
+===================================================================== */
+function handleCardClick(idx) {
+  const card = gameCards[idx];
+  const el   = document.querySelector(`.card[data-idx="${idx}"]`);
+  if (!canFlip || card.matched || card.flipped) return;
+
+  card.flipped = true;
+  el.classList.add('flipped');
+  flipped.push(idx);
+
+  if (flipped.length < 2) return;
+
+  canFlip = false;
+  const [a, b] = flipped;
+
+  if (gameCards[a].pairId === gameCards[b].pairId) {
+    setTimeout(() => doMatch(a, b), 320);
+  } else {
+    const elA = cardEl(a), elB = cardEl(b);
+    setTimeout(() => {
+      elA.classList.add('shake');
+      elB.classList.add('shake');
+      setTimeout(() => {
+        elA.classList.remove('shake', 'flipped');
+        elB.classList.remove('shake', 'flipped');
+        gameCards[a].flipped = false;
+        gameCards[b].flipped = false;
+        flipped  = [];
+        canFlip  = true;
+        switchTurn();
+      }, 430);
+    }, 660);
+  }
+}
+
+function showGetPopup(cardHTML) {
+  const popup = document.getElementById('get-popup');
+  const inner = popup.querySelector('.get-inner');
+  const label = document.getElementById('getLabel');
+  document.getElementById('getCard1').innerHTML = cardHTML;
+  label.textContent  = 'GET!';
+  label.style.color  = '';      /* CSSデフォルト (var(--rose)) に戻す */
+  label.style.fontSize = '';
+
+  popup.style.display = 'flex';
+  inner.style.animation = 'none';
+  void inner.offsetWidth;
+  inner.style.animation = 'getIn 0.38s cubic-bezier(0.34,1.56,0.64,1) forwards';
+
+  setTimeout(() => {
+    inner.style.animation = 'getOut 0.30s ease-in forwards';
+    setTimeout(() => { popup.style.display = 'none'; }, 320);
+  }, 1000);
+}
+
+function doMatch(a, b) {
+  const elA = cardEl(a), elB = cardEl(b);
+  /* カードが表向きの今この瞬間にコンテンツをキャプチャ */
+  const frontEl  = elA.querySelector('.card-front');
+  const cardHTML = frontEl ? frontEl.innerHTML : buildCardFront(gameCards[a].pairId);
+
+  elA.classList.add('match-bounce', 'flash-ring');
+  elB.classList.add('match-bounce', 'flash-ring');
+  spawnParticles(elA);
+  spawnParticles(elB);
+
+  setTimeout(() => {
+    elA.classList.remove('match-bounce', 'flash-ring');
+    elB.classList.remove('match-bounce', 'flash-ring');
+    elA.classList.add('removing');
+    elB.classList.add('removing');
+
+    setTimeout(() => {
+      elA.classList.replace('removing', 'gone');
+      elB.classList.replace('removing', 'gone');
+      gameCards[a].matched = true;
+      gameCards[b].matched = true;
+
+      playerPairs[currentPlayer]++;
+      playerDecks[currentPlayer].push(gameCards[a].pairId);
+      matchedCount++;
+      updateScoreBadges();
+
+      const justStopped  = playerPairs[currentPlayer] >= WIN_PAIRS && !deckConfirmed[currentPlayer];
+      const isLastMatch  = matchedCount === NUM_PAIRS;
+      if (justStopped) deckConfirmed[currentPlayer] = true;
+
+      flipped  = [];
+      canFlip  = !isLastMatch;
+
+      if (isLastMatch) {
+        /* 最終マッチ：GETポップアップなし → ゲーム終了シーケンスへ */
+        setTimeout(gameComplete, 600);
+      } else {
+        showGetPopup(cardHTML);
+        if (justStopped) {
+          showDeckConfirmed(currentPlayer);
+          setTimeout(switchTurn, 600);
+        }
+      }
+    }, 500);
+  }, 420);
+}
+
+function cardEl(idx) {
+  return document.querySelector(`.card[data-idx="${idx}"]`);
+}
+
+/* =====================================================================
+   Deck Confirmed Toast
+===================================================================== */
+function showDeckConfirmed(player) {
+  const toast = document.getElementById('deckToast');
+  toast.textContent  = PLAYER_NAMES[player] + '\nSTOP！デッキ確定！';
+  toast.style.background = PLAYER_GRAD[player];
+  toast.classList.add('show');
+
+  const badge = document.getElementById(player === 0 ? 'badgeP1' : 'badgeP2');
+  badge.classList.add('stopped');
+  if (!badge.querySelector('.badge-stop')) {
+    const stop      = document.createElement('span');
+    stop.className  = 'badge-stop';
+    stop.textContent = 'STOP';
+    badge.appendChild(stop);
+  }
+  setTimeout(() => toast.classList.remove('show'), 2400);
+  launchDeckConfetti();
+}
+
+/* =====================================================================
+   Deck Confirmed Confetti
+===================================================================== */
+function launchDeckConfetti() {
+  const root   = document.getElementById('particles-root');
+  const canvas = document.getElementById('confetti-canvas');
+  const ctx    = canvas.getContext('2d');
+  canvas.width  = window.innerWidth;
+  canvas.height = window.innerHeight;
+  const W = canvas.width, H = canvas.height;
+
+  /* ── Canvas pieces (circles + rounded rects) ── */
+  const pieces = Array.from({ length: 90 }, () => {
+    const r = 4 + Math.random() * 7;
+    return {
+      x: Math.random() * W, y: -10 - Math.random() * 40,
+      r, color: STAR_COLORS[Math.floor(Math.random() * STAR_COLORS.length)],
+      vx: (Math.random() - 0.5) * 3.5, vy: 2.5 + Math.random() * 4,
+      rot: Math.random() * Math.PI * 2, rotV: (Math.random() - 0.5) * 0.18,
+      opacity: 1, circle: Math.random() < 0.55,
+    };
+  });
+
+  const t0 = Date.now();
+  function drawDeck() {
+    ctx.clearRect(0, 0, W, H);
+    const age = Date.now() - t0;
+    for (const p of pieces) {
+      p.x += p.vx; p.y += p.vy; p.rot += p.rotV;
+      if (age > 1800) p.opacity = Math.max(0, p.opacity - 0.025);
+      ctx.save();
+      ctx.globalAlpha = p.opacity;
+      ctx.fillStyle = p.color;
+      ctx.translate(p.x, p.y); ctx.rotate(p.rot);
+      if (p.circle) {
+        ctx.beginPath(); ctx.arc(0, 0, p.r, 0, Math.PI * 2); ctx.fill();
+      } else {
+        const rr = p.r * 0.4;
+        ctx.beginPath();
+        ctx.roundRect(-p.r, -p.r * 0.6, p.r * 2, p.r * 1.2, rr);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+    if (age < 3500 && pieces.some(p => p.opacity > 0)) requestAnimationFrame(drawDeck);
+    else ctx.clearRect(0, 0, W, H);
+  }
+  drawDeck();
+
+  /* ── CSS star bursts across the screen ── */
+  const chars = ['★', '✦', '♡', '✿', '✶', '◎', '❋'];
+  for (let i = 0; i < 36; i++) {
+    setTimeout(() => {
+      const p     = document.createElement('div');
+      p.className = 'particle';
+      const sx    = W * 0.1 + Math.random() * W * 0.8;
+      const sy    = H * 0.2 + Math.random() * H * 0.6;
+      const angle = Math.random() * Math.PI * 2;
+      const dist  = 90 + Math.random() * 160;
+      const size  = 14 + Math.random() * 20;
+      const color = STAR_COLORS[Math.floor(Math.random() * STAR_COLORS.length)];
+      p.style.cssText = `
+        left:${sx}px; top:${sy}px; font-size:${size}px; color:${color};
+        --tx:${(Math.cos(angle) * dist).toFixed(1)}px;
+        --ty:${(Math.sin(angle) * dist).toFixed(1)}px;
+        animation: particleFly 1.3s ease-out forwards;`;
+      p.textContent = chars[Math.floor(Math.random() * chars.length)];
+      root.appendChild(p);
+      setTimeout(() => p.remove(), 1400);
+    }, i * 55);
+  }
+}
+
+/* =====================================================================
+   Game complete
+===================================================================== */
+function gameComplete() {
+  canFlip = false;
+  showAnnouncement('ゲーム終了！', 'var(--rose)', 1400, () => {
+    launchConfetti();
+    animateResultReveal();
+  });
+}
+
+/* テキストのみのポップアップ（カードなし） */
+function showAnnouncement(text, color, duration, onDone) {
+  const popup = document.getElementById('get-popup');
+  const inner = popup.querySelector('.get-inner');
+  const label = document.getElementById('getLabel');
+  const card  = document.getElementById('getCard1');
+  card.style.display   = 'none';
+  label.textContent    = text;
+  label.style.color    = color;
+  label.style.fontSize = 'clamp(2.4rem, 10vw, 4rem)';
+  popup.style.display  = 'flex';
+  inner.style.animation = 'none';
+  void inner.offsetWidth;
+  inner.style.animation = 'getIn 0.38s cubic-bezier(0.34,1.56,0.64,1) forwards';
+  setTimeout(() => {
+    inner.style.animation = 'getOut 0.30s ease-in forwards';
+    setTimeout(() => {
+      popup.style.display  = 'none';
+      card.style.display   = '';
+      if (onDone) onDone();
+    }, 320);
+  }, duration);
+}
+
+/* 1枚カード + ラベルのポップアップ */
+function showRevealCard(cardHTML, labelText, labelColor, onDone) {
+  const popup = document.getElementById('get-popup');
+  const inner = popup.querySelector('.get-inner');
+  const label = document.getElementById('getLabel');
+  document.getElementById('getCard1').innerHTML = cardHTML;
+  label.textContent    = labelText;
+  label.style.color    = labelColor;
+  label.style.fontSize = 'clamp(1.4rem, 6vw, 2.2rem)';
+  popup.style.display  = 'flex';
+  inner.style.animation = 'none';
+  void inner.offsetWidth;
+  inner.style.animation = 'getIn 0.38s cubic-bezier(0.34,1.56,0.64,1) forwards';
+  setTimeout(() => {
+    inner.style.animation = 'getOut 0.30s ease-in forwards';
+    setTimeout(() => {
+      popup.style.display = 'none';
+      onDone();
+    }, 320);
+  }, 1100);
+}
+
+function animateResultReveal() {
+  document.getElementById('resultFinal').classList.remove('visible');
+
+  const sequence = [];
+  [0, 1].forEach(p => {
+    sequence.push({ type: 'title', text: PLAYER_NAMES[p] + 'のデッキ', color: PLAYER_GRAD[p] });
+    playerDecks[p].forEach(pairId => {
+      sequence.push({ type: 'card', cardHTML: buildCardFront(pairId),
+                      label: PLAYER_NAMES[p], color: PLAYER_GRAD[p] });
+    });
+  });
+
+  function showNext(i) {
+    if (i >= sequence.length) {
+      buildResultDecks();
+      setTimeout(() => {
+        document.getElementById('resultOverlay').classList.add('open');
+        setTimeout(() => document.getElementById('resultFinal').classList.add('visible'), 400);
+      }, 400);
+      return;
+    }
+    const item = sequence[i];
+    if (item.type === 'title') {
+      showAnnouncement(item.text, item.color, 1000, () => showNext(i + 1));
+    } else {
+      showRevealCard(item.cardHTML, item.label, item.color, () => showNext(i + 1));
+    }
+  }
+
+  showNext(0);
+}
+
+function buildResultDecks() {
+  [0, 1].forEach(p => {
+    const grid = document.getElementById(p === 0 ? 'cardsP1' : 'cardsP2');
+    grid.innerHTML = '';
+    playerDecks[p].forEach(pairId => {
+      const card = document.createElement('div');
+      card.className = 'result-mini-card';
+      card.innerHTML = buildCardFront(pairId);
+      grid.appendChild(card);
+    });
+  });
+}
+
+/* =====================================================================
+   Render grid
+===================================================================== */
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function renderGrid() {
+  const grid = document.getElementById('grid');
+  grid.innerHTML = '';
+  gameCards.forEach((card, idx) => {
+    const div       = document.createElement('div');
+    div.className   = 'card';
+    div.dataset.idx = idx;
+    div.innerHTML   = `
+      <div class="card-inner">
+        <div class="card-face card-back">
+          <div class="card-back-inner"></div>
+          <span class="card-back-icon">★</span>
+        </div>
+        <div class="card-face card-front ${userImages[card.pairId] ? 'has-image' : ''}">
+          ${buildCardFront(card.pairId)}
+        </div>
+      </div>`;
+    div.addEventListener('click', () => handleCardClick(idx));
+    grid.appendChild(div);
+  });
+}
+
+function buildCardFront(pairId) {
+  const img = userImages[pairId];
+  if (img) return `<img src="${img}" alt="card ${pairId + 1}">`;
+  const d = DEFAULT_CARDS[pairId];
+  return `
+    <div class="playing-card ${d.cls}">
+      <div class="pc-corner pc-tl"><span>${d.rank}</span><span>${d.suit}</span></div>
+      <div class="pc-center-suit">${d.suit}</div>
+      <div class="pc-corner pc-br"><span>${d.rank}</span><span>${d.suit}</span></div>
+    </div>`;
+}
+
+/* =====================================================================
+   Particles
+===================================================================== */
+function spawnParticles(el) {
+  const rect  = el.getBoundingClientRect();
+  const cx    = rect.left + rect.width  / 2;
+  const cy    = rect.top  + rect.height / 2;
+  const root  = document.getElementById('particles-root');
+
+  for (let i = 0; i < 16; i++) {
+    const p     = document.createElement('div');
+    p.className = 'particle';
+    const angle = (i / 16) * Math.PI * 2;
+    const dist  = 50 + Math.random() * 70;
+    const size  = 10 + Math.random() * 14;
+    const char  = PARTICLE_CHARS[Math.floor(Math.random() * PARTICLE_CHARS.length)];
+    const color = STAR_COLORS[Math.floor(Math.random() * STAR_COLORS.length)];
+    p.style.cssText = `
+      left:${cx}px; top:${cy}px; font-size:${size}px;
+      color:${color};
+      --tx:${(Math.cos(angle)*dist).toFixed(1)}px;
+      --ty:${(Math.sin(angle)*dist).toFixed(1)}px;`;
+    p.textContent = char;
+    root.appendChild(p);
+    setTimeout(() => p.remove(), 820);
+  }
+}
+
+/* =====================================================================
+   Confetti
+===================================================================== */
+function launchConfetti() {
+  const canvas  = document.getElementById('confetti-canvas');
+  const ctx     = canvas.getContext('2d');
+  canvas.width  = window.innerWidth;
+  canvas.height = window.innerHeight;
+
+  const pieces = Array.from({ length: 200 }, () => ({
+    x: Math.random() * canvas.width,
+    y: -20 - Math.random() * canvas.height * 0.5,
+    w: 7  + Math.random() * 9,
+    h: 4  + Math.random() * 6,
+    color:   STAR_COLORS[Math.floor(Math.random() * STAR_COLORS.length)],
+    rot:  Math.random() * Math.PI * 2,
+    rotV: (Math.random() - 0.5) * 0.18,
+    vx:   (Math.random() - 0.5) * 2.5,
+    vy:   2.0 + Math.random() * 3.2,
+    opacity: 1,
+    star: Math.random() < 0.4,
+  }));
+
+  const t0 = Date.now();
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const age = Date.now() - t0;
+    for (const p of pieces) {
+      p.x += p.vx; p.y += p.vy; p.rot += p.rotV;
+      if (age > 3000) p.opacity = Math.max(0, p.opacity - 0.013);
+      ctx.save();
+      ctx.globalAlpha = p.opacity;
+      ctx.translate(p.x + p.w/2, p.y + p.h/2);
+      ctx.rotate(p.rot);
+      ctx.fillStyle = p.color;
+      ctx.strokeStyle = '#2A2840';
+      ctx.lineWidth = 1;
+      if (p.star) {
+        ctx.beginPath();
+        ctx.moveTo(0,-p.h); ctx.lineTo(p.w*.45,0); ctx.lineTo(0,p.h); ctx.lineTo(-p.w*.45,0);
+        ctx.closePath(); ctx.fill(); ctx.stroke();
+      } else {
+        ctx.fillRect(-p.w/2, -p.h/2, p.w, p.h);
+        ctx.strokeRect(-p.w/2, -p.h/2, p.w, p.h);
+      }
+      ctx.restore();
+    }
+    if (age < 6500 && pieces.some(p => p.opacity > 0)) requestAnimationFrame(draw);
+    else ctx.clearRect(0, 0, canvas.width, canvas.height);
+  }
+  draw();
+}
+
+/* =====================================================================
+   Settings modal
+===================================================================== */
+function openSettings() {
+  buildUploadGrid();
+  document.getElementById('settingsOverlay').classList.add('open');
+}
+function closeSettings() {
+  document.getElementById('settingsOverlay').classList.remove('open');
+}
+
+function buildUploadGrid() {
+  const grid = document.getElementById('uploadGrid');
+  grid.innerHTML = '';
+
+  for (let i = 0; i < NUM_PAIRS; i++) {
+    const label   = document.createElement('label');
+    label.className = 'upload-slot';
+    const input   = document.createElement('input');
+    input.type    = 'file';
+    input.accept  = 'image/*';
+    label.appendChild(input);
+
+    function setPreview(src) {
+      [...label.childNodes].forEach(n => { if (n !== input) n.remove(); });
+      label.classList.remove('slot-error', 'slot-warn');
+      if (src) {
+        const img = document.createElement('img');
+        img.src   = src;
+        label.appendChild(img);
+      } else {
+        const plus      = document.createElement('span');
+        plus.className  = 'slot-plus';
+        plus.textContent = '+';
+        const num       = document.createElement('span');
+        num.className   = 'slot-num';
+        num.textContent = i + 1;
+        label.appendChild(plus);
+        label.appendChild(num);
+      }
+    }
+
+    function showSlotMessage(cls, msg) {
+      label.classList.add(cls);
+      const err = document.createElement('span');
+      err.className   = 'slot-msg';
+      err.textContent = msg;
+      label.appendChild(err);
+    }
+
+    setPreview(userImages[i] || null);
+
+    input.addEventListener('change', e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = ev => {
+        const dataUrl = ev.target.result;
+        /* ① 形式チェック: ブラウザで表示できるか確認 */
+        const testImg = new Image();
+        testImg.onload = () => {
+          setPreview(dataUrl);
+          const saved = saveImage(i, dataUrl);
+          /* ② 保存容量チェック */
+          if (!saved) showSlotMessage('slot-warn', '容量超過：今回のみ有効');
+        };
+        testImg.onerror = () => {
+          /* 表示できない形式（HEIC等） */
+          userImages[i] = null;
+          setPreview(null);
+          showSlotMessage('slot-error', '使用できません');
+        };
+        testImg.src = dataUrl;
+        input.value = '';
+      };
+      reader.readAsDataURL(file);
+    });
+
+    grid.appendChild(label);
+  }
+}
+
+/* =====================================================================
+   Event listeners
+===================================================================== */
+document.getElementById('startBtn').addEventListener('click', startGame);
+document.getElementById('settingsBtn').addEventListener('click', openSettings);
+document.getElementById('closeSettingsBtn').addEventListener('click', closeSettings);
+document.getElementById('playAgainBtn').addEventListener('click', startGame);
+
+document.getElementById('clearImagesBtn').addEventListener('click', () => {
+  if (confirm('全ての保存画像を削除しますか？')) {
+    clearAllImages();
+    buildUploadGrid();
+  }
+});
+
+document.getElementById('settingsOverlay').addEventListener('click', function(e) {
+  if (e.target === this) closeSettings();
+});
+
+/* =====================================================================
+   Boot
+===================================================================== */
+loadImages();
+startGame();
+</script>
+</body>
+</html>
