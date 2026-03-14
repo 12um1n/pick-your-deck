@@ -9,7 +9,7 @@
   <title>PICK YOUR DECK</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Nunito:wght@300;400;700&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -19,23 +19,26 @@
     }
 
     :root {
-      --bg:       #EEFDCD;   /* Mimosa */
-      --aqua:     #7DFDDF;   /* Aquamarine */
-      --mauve:    #D696FE;   /* Mauve */
-      --rose:     #F85BB1;   /* Brilliant Rose */
+      --bg:       #fdf6f8;
+      --aqua:     #c4a8c8;
+      --mauve:    #D696FE;
+      --rose:     #F85BB1;
       --outline:  #2A2840;
       --text:     #2A2840;
       --text-sub: #7070A0;
       --white:    #FFFFFF;
       --p1:       #D696FE;   /* player 1 = mauve */
-      --p2:       #7DFDDF;   /* player 2 = aquamarine */
+      --p2:       #c4a8c8;   /* player 2 */
       --p1-dark:  #8030B8;
-      --p2-dark:  #18A080;
+      --p2-dark:  #9070a8;
     }
 
     body {
-      font-family: 'Hiragino Maru Gothic Pro', 'Rounded Mplus 1c', 'Arial Rounded MT Bold', 'Segoe UI', sans-serif;
-      background-color: var(--bg);
+      font-family: 'Nunito', 'Hiragino Maru Gothic Pro', 'Rounded Mplus 1c', sans-serif;
+      background-image: url('bg.jpg');
+      background-size: cover;
+      background-position: center;
+      background-attachment: fixed;
       min-height: 100vh;
       min-height: -webkit-fill-available;
       color: var(--text);
@@ -60,10 +63,13 @@
       gap: 8px; margin-bottom: clamp(6px, 2vw, 12px);
     }
     h1 {
-      font-size: clamp(1.3rem, 5.5vw, 2.4rem);
+      font-size: clamp(1.425rem, 5.5vw, 2.525rem);
       font-weight: 700;
       letter-spacing: 0.08em;
       color: var(--mauve);
+      text-shadow:
+        -2px -2px 0 #fff, 2px -2px 0 #fff,
+        -2px  2px 0 #fff, 2px  2px 0 #fff;
     }
 
     /* ── Buttons ── */
@@ -105,14 +111,15 @@
       transition: background 0.35s;
     }
     .turn-indicator.p1-turn { background: var(--mauve); }
-    .turn-indicator.p2-turn { background: var(--aqua); }
-    .turn-suffix { font-weight: 700; }
+    .turn-indicator.p2-turn { background: #c4a8c8; }
     .turn-indicator.switching {
-      animation: turnSwitch 0.32s cubic-bezier(0.34,1.56,0.64,1);
+      animation: turnSwitch 0.48s cubic-bezier(0.34,1.56,0.64,1);
     }
     @keyframes turnSwitch {
-      0%   { transform: scale(0.85); opacity: 0.6; }
-      100% { transform: scale(1);    opacity: 1;   }
+      0%   { transform: translateY(-22px) scale(0.88); opacity: 0; }
+      55%  { transform: translateY(5px)   scale(1.06); opacity: 1; }
+      78%  { transform: translateY(-3px)  scale(0.98); }
+      100% { transform: translateY(0)     scale(1);    opacity: 1; }
     }
 
     /* ── Score Badges ── equal width via grid ── */
@@ -187,7 +194,7 @@
 
     /* Card Back — image */
     .card-back {
-      background-image: url('card-back.jpeg');
+      background-image: var(--card-back-image, url('card-back.jpeg'));
       background-size: cover;
       background-position: center;
     }
@@ -270,6 +277,9 @@
       align-items: center; justify-content: center;
       gap: clamp(10px, 2.5vh, 20px);
       pointer-events: none;
+      background: rgba(0, 0, 0, 0.18);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
     }
     .get-inner {
       display: flex; flex-direction: column;
@@ -348,7 +358,7 @@
 
     /* ── Settings Modal ── */
     .modal {
-      background: rgba(255,255,255,0.97);
+      background: var(--bg);
       border-radius: 22px; padding: 22px 16px 20px;
       width: 100%; max-width: 480px;
       max-height: 88vh; max-height: 88dvh;
@@ -361,6 +371,20 @@
       margin-bottom: 4px;
     }
     .modal-hint { text-align: center; font-size: 0.82rem; color: var(--text-sub); margin-bottom: 16px; }
+    /* ── Player Name Settings ── */
+    .name-settings { display: flex; gap: 10px; margin-bottom: 16px; }
+    .name-field { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+    .name-field label { font-size: 0.72rem; font-weight: 900; letter-spacing: 0.07em; }
+    .name-field.p1-field label { color: var(--p1-dark); }
+    .name-field.p2-field label { color: var(--p2-dark); }
+    .name-input {
+      border: 2px solid rgba(42,40,64,0.2); border-radius: 8px;
+      padding: 6px 10px; font-size: 0.9rem; font-family: inherit;
+      background: rgba(255,255,255,0.8); color: var(--text);
+      outline: none; width: 100%; transition: border-color 0.2s;
+    }
+    .name-input:focus { border-color: var(--mauve); }
+
     .upload-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 18px; }
     .upload-slot {
       aspect-ratio: 2 / 3;
@@ -397,10 +421,10 @@
 
     /* ── Result Screen ── */
     .result-box {
-      background: rgba(255,255,255,0.97);
+      background: var(--bg);
       border-radius: 28px;
-      padding: clamp(24px,5vw,40px) clamp(16px,4vw,32px);
-      width: min(92vw, 500px);
+      padding: clamp(20px,4vw,36px) clamp(16px,4vw,32px);
+      width: min(92vw, 520px);
       box-shadow: 0 8px 40px rgba(0,0,0,0.12);
       text-align: center;
       animation: popIn 0.40s cubic-bezier(0.34,1.56,0.64,1) forwards;
@@ -409,36 +433,49 @@
       from { transform: scale(0.88); opacity: 0; }
       to   { transform: scale(1);    opacity: 1; }
     }
-    .result-decks {
-      display: flex; gap: clamp(8px,3vw,20px);
-      justify-content: center; margin-bottom: 20px;
-    }
-    .result-player-section { flex: 1; min-width: 0; }
+    .result-player-row { margin-bottom: 14px; }
+    .p2-row { background: color-mix(in srgb, #c4a8c8 12%, white); border-radius: 10px; padding: 8px; }
     .result-player-label {
-      font-size: 0.78rem; font-weight: 900; letter-spacing: 0.07em;
-      margin-bottom: 8px;
+      font-size: 0.82rem; font-weight: 900; letter-spacing: 0.07em;
+      margin-bottom: 6px;
     }
     .result-player-label.p1-label { color: var(--p1-dark); }
     .result-player-label.p2-label { color: var(--p2-dark); }
-    .result-mini-grid {
-      display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px;
+    .result-card-row {
+      display: flex; gap: 6px; justify-content: center;
+      flex-wrap: nowrap; overflow-x: auto;
     }
     .result-mini-card {
       aspect-ratio: 2/3; border-radius: 6px; overflow: hidden;
       box-shadow: 0 2px 8px rgba(0,0,0,0.13);
       animation: popIn 0.30s cubic-bezier(0.34,1.56,0.64,1) forwards;
+      width: clamp(46px, 10vw, 70px); flex-shrink: 0;
     }
     .result-mini-card img { width: 100%; height: 100%; object-fit: cover; display: block; }
     .result-mini-card .playing-card { width: 100%; height: 100%; }
+    .result-compare {
+      margin: 4px 0 16px; padding: 10px 14px;
+      background: rgba(44,40,64,0.06); border-radius: 14px;
+      font-size: clamp(0.85rem, 3.5vw, 1.05rem); color: var(--text);
+    }
+    .compare-scores {
+      display: flex; align-items: center; justify-content: center;
+      gap: 12px; margin-bottom: 6px; font-weight: 800;
+    }
+    .compare-p1 { color: var(--p1-dark); }
+    .compare-p2 { color: var(--p2-dark); }
+    .compare-vs { color: var(--text-sub); font-weight: 700; }
+    .compare-winner { font-weight: 800; font-size: clamp(0.92rem, 3.8vw, 1.2rem); }
     .result-final {
       text-align: center; opacity: 0;
       transition: opacity 0.6s ease;
     }
     .result-final.visible { opacity: 1; }
-    .result-final-text {
-      font-size: clamp(1.1rem, 4.5vw, 1.5rem);
-      font-weight: 700; letter-spacing: 0.06em;
-      color: var(--text); margin-bottom: 20px;
+    .result-gameset {
+      font-family: 'Fredoka', 'Hiragino Maru Gothic Pro', sans-serif;
+      font-size: clamp(2rem, 9vw, 3.2rem);
+      font-weight: 700; letter-spacing: 0.1em;
+      color: var(--rose); margin-bottom: 14px;
     }
 
     /* ── Responsive ── */
@@ -502,7 +539,6 @@
   <!-- Turn indicator -->
   <div class="turn-indicator p1-turn" id="turnIndicator">
     <span id="turnPlayerName">Player 1</span>
-    <span class="turn-suffix">のターン</span>
   </div>
 
   <!-- Score badges — equal width via CSS grid -->
@@ -530,6 +566,16 @@
   <div class="modal">
     <h2>⚙ 画像設定</h2>
     <p class="modal-hint">好きな画像をアップロードしてください（タップで選択）</p>
+    <div class="name-settings">
+      <div class="name-field p1-field">
+        <label for="nameP1">PLAYER 1</label>
+        <input type="text" id="nameP1" class="name-input" maxlength="12" placeholder="Player 1">
+      </div>
+      <div class="name-field p2-field">
+        <label for="nameP2">PLAYER 2</label>
+        <input type="text" id="nameP2" class="name-input" maxlength="12" placeholder="Player 2">
+      </div>
+    </div>
     <div class="upload-grid" id="uploadGrid"></div>
     <div class="modal-actions">
       <button class="btn btn-clear" id="clearImagesBtn">✕ クリア</button>
@@ -541,18 +587,21 @@
 <!-- Result screen -->
 <div class="overlay" id="resultOverlay">
   <div class="result-box">
-    <div class="result-decks">
-      <div class="result-player-section">
-        <div class="result-player-label p1-label">Player 1</div>
-        <div class="result-mini-grid" id="cardsP1"></div>
-      </div>
-      <div class="result-player-section">
-        <div class="result-player-label p2-label">Player 2</div>
-        <div class="result-mini-grid" id="cardsP2"></div>
-      </div>
+    <!-- ① Player 1 deck -->
+    <div class="result-player-row">
+      <div class="result-player-label p1-label" id="resultLabelP1">Player 1</div>
+      <div class="result-card-row" id="cardsP1"></div>
     </div>
+    <!-- ② Player 2 deck -->
+    <div class="result-player-row p2-row">
+      <div class="result-player-label p2-label" id="resultLabelP2">Player 2</div>
+      <div class="result-card-row" id="cardsP2"></div>
+    </div>
+    <!-- ③ 両者カード比較 -->
+    <div class="result-compare" id="resultCompare"></div>
+    <!-- ④ GAME SET! -->
     <div class="result-final" id="resultFinal">
-      <div class="result-final-text">Your final picks.</div>
+      <div class="result-gameset">GAME SET!</div>
       <button class="btn btn-start" id="playAgainBtn">もう一度</button>
     </div>
   </div>
@@ -566,8 +615,8 @@ const STORAGE_KEY   = 'memGame_img_';
 const NUM_PAIRS     = 10;
 const WIN_PAIRS     = 5;
 
-const PLAYER_NAMES  = ['Player 1', 'Player 2'];
-const PLAYER_GRAD   = ['#D696FE', '#7DFDDF'];
+let PLAYER_NAMES  = ['Player 1', 'Player 2'];
+const PLAYER_GRAD   = ['#D696FE', '#c4a8c8'];
 
 const DEFAULT_CARDS = [
   { rank: 'A',  suit: '\u2665', cls: 'suit-heart'   },
@@ -639,6 +688,7 @@ function startGame() {
   document.getElementById('resultFinal').classList.remove('visible');
   document.getElementById('cardsP1').innerHTML = '';
   document.getElementById('cardsP2').innerHTML = '';
+  document.getElementById('resultCompare').innerHTML = '';
 
   ['badgeP1','badgeP2'].forEach(id => {
     const badge = document.getElementById(id);
@@ -703,7 +753,7 @@ function handleCardClick(idx) {
   const [a, b] = flipped;
 
   if (gameCards[a].pairId === gameCards[b].pairId) {
-    setTimeout(() => doMatch(a, b), 320);
+    setTimeout(() => doMatch(a, b), 1000);
   } else {
     const elA = cardEl(a), elB = cardEl(b);
     setTimeout(() => {
@@ -783,8 +833,10 @@ function doMatch(a, b) {
       } else {
         showGetPopup(cardHTML);
         if (justStopped) {
-          showDeckConfirmed(currentPlayer);
-          setTimeout(switchTurn, 600);
+          setTimeout(() => {
+            showDeckConfirmed(currentPlayer);
+            setTimeout(switchTurn, 600);
+          }, 700);
         }
       }
     }, 500);
@@ -894,14 +946,14 @@ function launchDeckConfetti() {
 ===================================================================== */
 function gameComplete() {
   canFlip = false;
-  showAnnouncement('ゲーム終了！', 'var(--rose)', 1400, () => {
+  showAnnouncement('GAME SET', 'var(--rose)', 1400, () => {
     launchConfetti();
     animateResultReveal();
-  });
+  }, 'clamp(3.8rem, 15vw, 6.5rem)');
 }
 
 /* テキストのみのポップアップ（カードなし） */
-function showAnnouncement(text, color, duration, onDone) {
+function showAnnouncement(text, color, duration, onDone, fontSize) {
   const popup = document.getElementById('get-popup');
   const inner = popup.querySelector('.get-inner');
   const label = document.getElementById('getLabel');
@@ -909,7 +961,7 @@ function showAnnouncement(text, color, duration, onDone) {
   card.style.display   = 'none';
   label.textContent    = text;
   label.style.color    = color;
-  label.style.fontSize = 'clamp(2.4rem, 10vw, 4rem)';
+  label.style.fontSize = fontSize || 'clamp(2.4rem, 10vw, 4rem)';
   popup.style.display  = 'flex';
   inner.style.animation = 'none';
   void inner.offsetWidth;
@@ -951,7 +1003,7 @@ function animateResultReveal() {
 
   const sequence = [];
   [0, 1].forEach(p => {
-    sequence.push({ type: 'title', text: PLAYER_NAMES[p] + 'のデッキ', color: PLAYER_GRAD[p] });
+    sequence.push({ type: 'title', text: PLAYER_NAMES[p] + "'S PICK", color: PLAYER_GRAD[p] });
     playerDecks[p].forEach(pairId => {
       sequence.push({ type: 'card', cardHTML: buildCardFront(pairId),
                       label: PLAYER_NAMES[p], color: PLAYER_GRAD[p] });
@@ -980,15 +1032,37 @@ function animateResultReveal() {
 
 function buildResultDecks() {
   [0, 1].forEach(p => {
-    const grid = document.getElementById(p === 0 ? 'cardsP1' : 'cardsP2');
-    grid.innerHTML = '';
+    const row = document.getElementById(p === 0 ? 'cardsP1' : 'cardsP2');
+    row.innerHTML = '';
     playerDecks[p].forEach(pairId => {
       const card = document.createElement('div');
       card.className = 'result-mini-card';
       card.innerHTML = buildCardFront(pairId);
-      grid.appendChild(card);
+      row.appendChild(card);
     });
   });
+
+  /* ③ 両者カード比較 */
+  const s0 = playerDecks[0].length;
+  const s1 = playerDecks[1].length;
+  let winnerText, winColor;
+  if (s0 > s1) {
+    winnerText = `${PLAYER_NAMES[0]} WINS!`;
+    winColor   = 'var(--p1-dark)';
+  } else if (s1 > s0) {
+    winnerText = `${PLAYER_NAMES[1]} WINS!`;
+    winColor   = '#c4a8c8';
+  } else {
+    winnerText = 'DRAW!';
+    winColor   = 'var(--rose)';
+  }
+  document.getElementById('resultCompare').innerHTML =
+    `<div class="compare-scores">` +
+      `<span class="compare-p1">${PLAYER_NAMES[0]}: ${s0}</span>` +
+      `<span class="compare-vs">vs</span>` +
+      `<span class="compare-p2">${PLAYER_NAMES[1]}: ${s1}</span>` +
+    `</div>` +
+    `<div class="compare-winner" style="color:${winColor}">${winnerText}</div>`;
 }
 
 /* =====================================================================
@@ -1073,47 +1147,47 @@ function launchConfetti() {
   const ctx     = canvas.getContext('2d');
   canvas.width  = window.innerWidth;
   canvas.height = window.innerHeight;
+  const W = canvas.width, H = canvas.height;
+  const CHARS = ['★','☆','✦','♡'];
 
-  const pieces = Array.from({ length: 200 }, () => ({
-    x: Math.random() * canvas.width,
-    y: -20 - Math.random() * canvas.height * 0.5,
-    w: 7  + Math.random() * 9,
-    h: 4  + Math.random() * 6,
-    color:   STAR_COLORS[Math.floor(Math.random() * STAR_COLORS.length)],
-    rot:  Math.random() * Math.PI * 2,
-    rotV: (Math.random() - 0.5) * 0.18,
-    vx:   (Math.random() - 0.5) * 2.5,
-    vy:   2.0 + Math.random() * 3.2,
+  const pieces = Array.from({ length: 120 }, () => ({
+    x:     Math.random() * W,
+    y:     -20 - Math.random() * H * 0.6,
+    size:  16 + Math.random() * 12,      /* 16〜28px */
+    char:  CHARS[Math.floor(Math.random() * CHARS.length)],
+    color: STAR_COLORS[Math.floor(Math.random() * STAR_COLORS.length)],
+    vx:    (Math.random() - 0.5) * 0.8,
+    vy:    0.5 + Math.random() * 0.9,    /* ふわふわ：ゆっくり落下 */
+    sway:  (Math.random() - 0.5) * 0.05, /* 左右ゆらぎ角速度 */
+    swayT: Math.random() * Math.PI * 2,
+    rot:   Math.random() * Math.PI * 2,
+    rotV:  (Math.random() - 0.5) * 0.04,
     opacity: 1,
-    star: Math.random() < 0.4,
   }));
 
   const t0 = Date.now();
   function draw() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.clearRect(0, 0, W, H);
     const age = Date.now() - t0;
     for (const p of pieces) {
-      p.x += p.vx; p.y += p.vy; p.rot += p.rotV;
-      if (age > 3000) p.opacity = Math.max(0, p.opacity - 0.013);
+      p.swayT += p.sway;
+      p.x     += p.vx + Math.sin(p.swayT * 2) * 2.2;  /* ふわふわ左右ゆらぎ */
+      p.y     += p.vy;
+      p.rot   += p.rotV;
+      if (age > 3500) p.opacity = Math.max(0, p.opacity - 0.010);
       ctx.save();
       ctx.globalAlpha = p.opacity;
-      ctx.translate(p.x + p.w/2, p.y + p.h/2);
+      ctx.translate(p.x, p.y);
       ctx.rotate(p.rot);
-      ctx.fillStyle = p.color;
-      ctx.strokeStyle = '#2A2840';
-      ctx.lineWidth = 1;
-      if (p.star) {
-        ctx.beginPath();
-        ctx.moveTo(0,-p.h); ctx.lineTo(p.w*.45,0); ctx.lineTo(0,p.h); ctx.lineTo(-p.w*.45,0);
-        ctx.closePath(); ctx.fill(); ctx.stroke();
-      } else {
-        ctx.fillRect(-p.w/2, -p.h/2, p.w, p.h);
-        ctx.strokeRect(-p.w/2, -p.h/2, p.w, p.h);
-      }
+      ctx.fillStyle   = p.color;
+      ctx.font        = `${p.size}px sans-serif`;
+      ctx.textAlign   = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(p.char, 0, 0);
       ctx.restore();
     }
-    if (age < 6500 && pieces.some(p => p.opacity > 0)) requestAnimationFrame(draw);
-    else ctx.clearRect(0, 0, canvas.width, canvas.height);
+    if (age < 7000 && pieces.some(p => p.opacity > 0)) requestAnimationFrame(draw);
+    else ctx.clearRect(0, 0, W, H);
   }
   draw();
 }
@@ -1121,11 +1195,28 @@ function launchConfetti() {
 /* =====================================================================
    Settings modal
 ===================================================================== */
+function applyPlayerNames() {
+  document.querySelector('#badgeP1 .badge-name').textContent = PLAYER_NAMES[0];
+  document.querySelector('#badgeP2 .badge-name').textContent = PLAYER_NAMES[1];
+  document.getElementById('turnPlayerName').textContent = PLAYER_NAMES[currentPlayer];
+  document.getElementById('resultLabelP1').textContent = PLAYER_NAMES[0];
+  document.getElementById('resultLabelP2').textContent = PLAYER_NAMES[1];
+}
+
 function openSettings() {
   buildUploadGrid();
+  document.getElementById('nameP1').value = PLAYER_NAMES[0];
+  document.getElementById('nameP2').value = PLAYER_NAMES[1];
   document.getElementById('settingsOverlay').classList.add('open');
 }
 function closeSettings() {
+  const n0 = document.getElementById('nameP1').value.trim() || 'Player 1';
+  const n1 = document.getElementById('nameP2').value.trim() || 'Player 2';
+  PLAYER_NAMES[0] = n0;
+  PLAYER_NAMES[1] = n1;
+  localStorage.setItem('memGame_name_0', n0);
+  localStorage.setItem('memGame_name_1', n1);
+  applyPlayerNames();
   document.getElementById('settingsOverlay').classList.remove('open');
 }
 
@@ -1222,8 +1313,32 @@ document.getElementById('settingsOverlay').addEventListener('click', function(e)
 /* =====================================================================
    Boot
 ===================================================================== */
+(function loadPlayerNames() {
+  const n0 = localStorage.getItem('memGame_name_0');
+  const n1 = localStorage.getItem('memGame_name_1');
+  if (n0) PLAYER_NAMES[0] = n0;
+  if (n1) PLAYER_NAMES[1] = n1;
+})();
+/* カード裏面画像: card-back.jpg / .jpeg / .png を順に試す */
+(function loadCardBack() {
+  const exts = ['jpg', 'jpeg', 'png', 'webp'];
+  let i = 0;
+  function tryNext() {
+    if (i >= exts.length) return;
+    const img = new Image();
+    img.onload = () => {
+      document.documentElement.style.setProperty(
+        '--card-back-image', `url('card-back.${exts[i]}')`
+      );
+    };
+    img.onerror = () => { i++; tryNext(); };
+    img.src = `card-back.${exts[i]}`;
+  }
+  tryNext();
+})();
 loadImages();
 startGame();
+applyPlayerNames();
 </script>
 </body>
 </html>
